@@ -10,8 +10,8 @@ export default function Home() {
         </h1>
         <p className="text-lg sm:text-xl text-slate-300">
           Dikita listens, understands, and responds—intelligently and
-          invisibly—while you focus on impressing your interviewer.
-          All in real time, from a separate device.
+          invisibly—while you focus on impressing your interviewer. All in real
+          time, from a separate device.
         </p>
         <Link
           href="/onboarding"
@@ -19,6 +19,7 @@ export default function Home() {
         >
           Get Started
         </Link>
+
         <p className="text-sm text-slate-500 mt-6">
           No installation. No screen sharing risk. Total control.
         </p>
