@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 
+
 export default function MicTestPage() {
   const [micStatus, setMicStatus] = useState<"idle" | "active" | "denied" | "error">("idle");
   const [volume, setVolume] = useState(0);

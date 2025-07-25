@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase";
 import {
   sendSignInLinkToEmail,
@@ -9,6 +10,7 @@ import {
   GoogleAuthProvider,
   GithubAuthProvider,
   signInWithPopup,
+  onAuthStateChanged,
 } from "firebase/auth";
 
 export default function OnboardingPage() {
@@ -16,8 +18,30 @@ export default function OnboardingPage() {
   const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
+  const router = useRouter();
+
+  // ✅ Redirect user to /mic-test only if onboardingStarted flag is set
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      const onboardingStarted = localStorage.getItem("onboardingStarted") === "true";
+
+      if (user && onboardingStarted) {
+        localStorage.removeItem("onboardingStarted");
+
+        const hasSessionProfile = false; // 🔧 Replace later with real profile check
+        if (!hasSessionProfile) {
+          router.push("/mic-test");
+        } else {
+          router.push("/session/setup");
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const actionCodeSettings: ActionCodeSettings = {
-    url: "http://localhost:3000/onboarding", // Redirect URL after email sign-in
+    url: "http://localhost:3000/onboarding",
     handleCodeInApp: true,
   };
 
@@ -30,6 +54,7 @@ export default function OnboardingPage() {
     try {
       setStatus("loading");
       await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+      localStorage.setItem("onboardingStarted", "true");
       window.localStorage.setItem("emailForSignIn", email);
       setStatus("sent");
       setErrorMsg("");
@@ -41,10 +66,10 @@ export default function OnboardingPage() {
 
   const handleGoogleSignIn = async () => {
     try {
+      localStorage.setItem("onboardingStarted", "true");
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       console.log("Google user:", result.user);
-      // TODO: redirect to dashboard or onboarding step 2
     } catch (error) {
       console.error("Google sign-in error:", error);
     }
@@ -52,10 +77,10 @@ export default function OnboardingPage() {
 
   const handleGithubSignIn = async () => {
     try {
+      localStorage.setItem("onboardingStarted", "true");
       const provider = new GithubAuthProvider();
       const result = await signInWithPopup(auth, provider);
       console.log("GitHub user:", result.user);
-      // TODO: redirect to dashboard or onboarding step 2
     } catch (error) {
       console.error("GitHub sign-in error:", error);
     }
@@ -70,7 +95,10 @@ export default function OnboardingPage() {
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium text-slate-300">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-slate-300"
+            >
               Email Address
             </label>
             <input
@@ -91,7 +119,9 @@ export default function OnboardingPage() {
           </button>
 
           {status === "sent" && (
-            <p className="text-sm text-green-400">Sign-in link sent! Check your email.</p>
+            <p className="text-sm text-green-400">
+              Sign-in link sent! Check your email.
+            </p>
           )}
           {status === "error" && (
             <p className="text-sm text-red-400">{errorMsg}</p>
@@ -99,7 +129,9 @@ export default function OnboardingPage() {
         </div>
 
         <div className="text-center text-sm text-slate-400 relative my-6">
-          <span className="bg-slate-800 px-2 z-10 relative">or sign up with</span>
+          <span className="bg-slate-800 px-2 z-10 relative">
+            or sign up with
+          </span>
           <div className="absolute left-0 top-1/2 w-full h-px bg-slate-600 -z-10"></div>
         </div>
 
@@ -110,6 +142,7 @@ export default function OnboardingPage() {
           >
             Continue with Google
           </button>
+
           <button
             onClick={handleGithubSignIn}
             className="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 rounded-lg transition duration-300"
