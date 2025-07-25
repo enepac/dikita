@@ -1,7 +1,38 @@
-// frontend/src/app/onboarding/page.tsx
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { auth } from "@/lib/firebase";
+import { sendSignInLinkToEmail, ActionCodeSettings } from "firebase/auth";
 
 export default function OnboardingPage() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const actionCodeSettings: ActionCodeSettings = {
+    url: "http://localhost:3000/onboarding", // Redirect URL
+    handleCodeInApp: true,
+  };
+
+  const handleSendOtp = async () => {
+    if (!email) {
+      setErrorMsg("Please enter a valid email.");
+      return;
+    }
+
+    try {
+      setStatus("loading");
+      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+      window.localStorage.setItem("emailForSignIn", email);
+      setStatus("sent");
+      setErrorMsg("");
+    } catch (error: any) {
+      setStatus("error");
+      setErrorMsg(error.message || "Failed to send link.");
+    }
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-slate-100 flex items-center justify-center p-6">
       <div className="max-w-md w-full space-y-6 bg-slate-800 p-8 rounded-2xl shadow-xl">
@@ -18,12 +49,25 @@ export default function OnboardingPage() {
               id="email"
               type="email"
               placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2 rounded-lg bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 rounded-lg transition duration-300">
-            Send OTP
+          <button
+            onClick={handleSendOtp}
+            disabled={status === "loading"}
+            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 rounded-lg transition duration-300 disabled:opacity-50"
+          >
+            {status === "loading" ? "Sending..." : "Send OTP"}
           </button>
+
+          {status === "sent" && (
+            <p className="text-sm text-green-400">Sign-in link sent! Check your email.</p>
+          )}
+          {status === "error" && (
+            <p className="text-sm text-red-400">{errorMsg}</p>
+          )}
         </div>
 
         <div className="text-center text-sm text-slate-400 relative my-6">
