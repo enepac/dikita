@@ -6,8 +6,17 @@ import Link from "next/link";
 export default function MicTestPage() {
   const [micStatus, setMicStatus] = useState<"idle" | "active" | "denied" | "error">("idle");
   const [volume, setVolume] = useState(0);
+  const [transcripts, setTranscripts] = useState<string[]>([]);
   const animationRef = useRef<number | null>(null);
   const circleRef = useRef<HTMLDivElement>(null);
+  const transcriptionIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const FAKE_SENTENCES = [
+    "Hi, can you hear me okay?",
+    "Looks like your microphone is working.",
+    "This is a sample transcription for testing.",
+    "You're all set to proceed.",
+  ];
 
   const handleStartMicTest = async () => {
     try {
@@ -29,7 +38,7 @@ export default function MicTestPage() {
         setVolume(normalized);
 
         if (circleRef.current) {
-          const scale = 1 + normalized * 1.5; // Pulse size
+          const scale = 1 + normalized * 1.5;
           circleRef.current.style.transform = `scale(${scale})`;
           circleRef.current.style.opacity = `${0.5 + normalized * 0.5}`;
         }
@@ -39,8 +48,13 @@ export default function MicTestPage() {
 
       updateVolume();
 
-      // Optional: stop tracks when navigating away
-      // stream.getTracks().forEach(track => track.stop());
+      // Simulate transcript lines every 2.5s
+      transcriptionIntervalRef.current = setInterval(() => {
+        setTranscripts((prev) => {
+          const nextIndex = prev.length % FAKE_SENTENCES.length;
+          return [...prev, FAKE_SENTENCES[nextIndex]];
+        });
+      }, 2500);
 
     } catch (error) {
       console.error("Microphone access error:", error);
@@ -54,9 +68,8 @@ export default function MicTestPage() {
 
   useEffect(() => {
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      if (transcriptionIntervalRef.current) clearInterval(transcriptionIntervalRef.current);
     };
   }, []);
 
@@ -98,8 +111,13 @@ export default function MicTestPage() {
           ></div>
         </div>
 
-        <div className="border border-slate-600 rounded-lg p-4 mt-4 text-left h-36 overflow-y-auto bg-slate-700 text-sm text-slate-300">
-          <p className="italic text-slate-500">Transcript will appear here...</p>
+        {/* Transcript Output */}
+        <div className="border border-slate-600 rounded-lg p-4 mt-4 text-left h-36 overflow-y-auto bg-slate-700 text-sm text-slate-300 space-y-1">
+          {transcripts.length === 0 ? (
+            <p className="italic text-slate-500">Transcript will appear here...</p>
+          ) : (
+            transcripts.map((line, idx) => <p key={idx}>• {line}</p>)
+          )}
         </div>
 
         <Link href="/" className="text-sm underline text-slate-400 hover:text-white transition">
