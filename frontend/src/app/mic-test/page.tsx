@@ -1,20 +1,47 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 
 export default function MicTestPage() {
   const [micStatus, setMicStatus] = useState<"idle" | "active" | "denied" | "error">("idle");
+  const [volume, setVolume] = useState(0);
+  const animationRef = useRef<number | null>(null);
+  const circleRef = useRef<HTMLDivElement>(null);
 
   const handleStartMicTest = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setMicStatus("active");
 
-      // Optional: Stop stream after detection to release resources
-      stream.getTracks().forEach((track) => track.stop());
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
 
-      console.log("Microphone access granted");
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      source.connect(analyser);
+
+      const updateVolume = () => {
+        analyser.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+        const normalized = Math.min(average / 128, 1); // Normalize 0–1
+        setVolume(normalized);
+
+        if (circleRef.current) {
+          const scale = 1 + normalized * 1.5; // Pulse size
+          circleRef.current.style.transform = `scale(${scale})`;
+          circleRef.current.style.opacity = `${0.5 + normalized * 0.5}`;
+        }
+
+        animationRef.current = requestAnimationFrame(updateVolume);
+      };
+
+      updateVolume();
+
+      // Optional: stop tracks when navigating away
+      // stream.getTracks().forEach(track => track.stop());
+
     } catch (error) {
       console.error("Microphone access error:", error);
       if (error instanceof DOMException && error.name === "NotAllowedError") {
@@ -24,6 +51,14 @@ export default function MicTestPage() {
       }
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
 
   const renderStatusMessage = () => {
     switch (micStatus) {
@@ -54,6 +89,14 @@ export default function MicTestPage() {
         </button>
 
         {renderStatusMessage()}
+
+        {/* Visual Pulse */}
+        <div className="flex justify-center">
+          <div
+            ref={circleRef}
+            className="w-24 h-24 mt-4 rounded-full bg-blue-400 opacity-50 transition-transform duration-75"
+          ></div>
+        </div>
 
         <div className="border border-slate-600 rounded-lg p-4 mt-4 text-left h-36 overflow-y-auto bg-slate-700 text-sm text-slate-300">
           <p className="italic text-slate-500">Transcript will appear here...</p>
