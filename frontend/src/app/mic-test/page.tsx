@@ -1,22 +1,25 @@
-'use client';
+"use client";
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 
-
 export default function MicTestPage() {
-  const [micStatus, setMicStatus] = useState<"idle" | "active" | "denied" | "error">("idle");
+  const [micStatus, setMicStatus] = useState<
+    "idle" | "active" | "denied" | "error"
+  >("idle");
   const [volume, setVolume] = useState(0);
   const [transcripts, setTranscripts] = useState<string[]>([]);
   const animationRef = useRef<number | null>(null);
   const circleRef = useRef<HTMLDivElement>(null);
-  const transcriptionIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const FAKE_SENTENCES = [
-    "Hi, can you hear me okay?",
-    "Looks like your microphone is working.",
-    "This is a sample transcription for testing.",
-    "You're all set to proceed.",
+  const FAKE_LINES = [
+    "Hello, can you hear me clearly?",
+    "Yes, the mic seems to be working perfectly.",
+    "This is just a test line to simulate transcription.",
+    "Awesome — you're all set to begin the interview.",
+    "Let me know if the connection drops at any point.",
   ];
 
   const handleStartMicTest = async () => {
@@ -24,7 +27,8 @@ export default function MicTestPage() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setMicStatus("active");
 
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioContext = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 256;
@@ -35,7 +39,7 @@ export default function MicTestPage() {
       const updateVolume = () => {
         analyser.getByteFrequencyData(dataArray);
         const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
-        const normalized = Math.min(average / 128, 1); // Normalize 0–1
+        const normalized = Math.min(average / 128, 1);
         setVolume(normalized);
 
         if (circleRef.current) {
@@ -49,16 +53,27 @@ export default function MicTestPage() {
 
       updateVolume();
 
-      // Simulate transcript lines every 2.5s
-      transcriptionIntervalRef.current = setInterval(() => {
-        setTranscripts((prev) => {
-          const nextIndex = prev.length % FAKE_SENTENCES.length;
-          return [...prev, FAKE_SENTENCES[nextIndex]];
+      // Simulated transcription loop with randomized intervals
+      let index = 0;
+      const loop = () => {
+        const now = new Date();
+        const time = now.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
         });
-      }, 2500);
+        const line = FAKE_LINES[index % FAKE_LINES.length];
+        const formatted = `[${time}] User: ${line}`;
 
-    } catch (error) {
-      console.error("Microphone access error:", error);
+        setTranscripts((prev) => [...prev.slice(-9), formatted]); // Limit to last 10 lines
+        index++;
+
+        intervalRef.current = setTimeout(loop, 1800 + Math.random() * 1500); // 1.8–3.3s
+      };
+
+      loop();
+    } catch (error: unknown) {
+      console.error("Mic access error:", error);
       if (error instanceof DOMException && error.name === "NotAllowedError") {
         setMicStatus("denied");
       } else {
@@ -67,10 +82,18 @@ export default function MicTestPage() {
     }
   };
 
+  // Auto-scroll to bottom on new transcript
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [transcripts]);
+
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
-      if (transcriptionIntervalRef.current) clearInterval(transcriptionIntervalRef.current);
+      if (intervalRef.current) clearTimeout(intervalRef.current);
     };
   }, []);
 
@@ -92,7 +115,7 @@ export default function MicTestPage() {
       <div className="max-w-md w-full space-y-6 bg-slate-800 p-8 rounded-2xl shadow-xl text-center">
         <h1 className="text-2xl sm:text-3xl font-bold">Test Your Microphone</h1>
         <p className="text-slate-400 text-sm">
-          Before we begin, let’s make sure your microphone is working properly.
+          Let's make sure your mic is working properly before we begin.
         </p>
 
         <button
@@ -113,15 +136,23 @@ export default function MicTestPage() {
         </div>
 
         {/* Transcript Output */}
-        <div className="border border-slate-600 rounded-lg p-4 mt-4 text-left h-36 overflow-y-auto bg-slate-700 text-sm text-slate-300 space-y-1">
+        <div
+          ref={scrollRef}
+          className="border border-slate-600 rounded-lg p-4 mt-4 text-left h-40 overflow-y-auto bg-slate-700 text-sm text-slate-300 space-y-1"
+        >
           {transcripts.length === 0 ? (
-            <p className="italic text-slate-500">Transcript will appear here...</p>
+            <p className="italic text-slate-500">
+              Transcript will appear here...
+            </p>
           ) : (
-            transcripts.map((line, idx) => <p key={idx}>• {line}</p>)
+            transcripts.map((line, idx) => <p key={idx}>{line}</p>)
           )}
         </div>
 
-        <Link href="/" className="text-sm underline text-slate-400 hover:text-white transition">
+        <Link
+          href="/"
+          className="text-sm underline text-slate-400 hover:text-white transition"
+        >
           ← Back to home
         </Link>
       </div>
