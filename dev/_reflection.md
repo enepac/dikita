@@ -20,3 +20,10 @@
 • Status: Working — Home screen loads, sign-in triggers redirect
 • Branch: feature/auth-routing
 • Phase: 1 — Auth + Routing
+
+## 🗓 2025-07-30 19:10 — Workspace Setup Form UI
+• Added: /frontend/src/app/dashboard/setup/page.tsx
+• Form fields: company, role, tone, language
+• Status: Working — renders with local state + console submit
+• Phase: 2 — Upload + Setup
+• Branch: feature/upload-setup
