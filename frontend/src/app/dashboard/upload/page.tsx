@@ -1,6 +1,7 @@
 // frontend/src/app/dashboard/upload/page.tsx
 "use client";
 
+import { supabase } from "@/lib/supabase"; // make sure this import is at the top
 import { useState } from "react";
 
 export default function UploadDocuments() {
@@ -21,10 +22,20 @@ export default function UploadDocuments() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Files to upload:", files);
-    // TODO: Upload files to Supabase
+
+    for (const file of files) {
+      const { data, error } = await supabase.storage
+        .from("documents")
+        .upload(`uploads/${Date.now()}-${file.name}`, file);
+
+      if (error) {
+        console.error("Upload error:", error.message);
+      } else {
+        console.log("File uploaded:", data.path);
+      }
+    }
   };
 
   return (
@@ -51,7 +62,10 @@ export default function UploadDocuments() {
 
       <ul className="w-full max-w-xl mb-4">
         {files.map((file, i) => (
-          <li key={i} className="flex justify-between items-center border p-2 rounded mb-2">
+          <li
+            key={i}
+            className="flex justify-between items-center border p-2 rounded mb-2"
+          >
             {file.name}
             <button
               onClick={() => removeFile(i)}

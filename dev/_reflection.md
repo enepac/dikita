@@ -27,3 +27,11 @@
 • Status: Working — renders with local state + console submit
 • Phase: 2 — Upload + Setup
 • Branch: feature/upload-setup
+
+## 🗓 2025-07-30 19:35 — Document Upload UI
+• Added: /frontend/src/app/dashboard/upload/page.tsx
+• Drag-and-drop + file preview with remove
+• Submit logs files (embedding not yet wired)
+• Status: Working — renders cleanly with browser test
+• Phase: 2 — Upload + Setup
+• Branch: feature/upload-setup
