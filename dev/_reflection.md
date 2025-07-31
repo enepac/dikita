@@ -43,3 +43,11 @@
 • Status: File uploads appear in dashboard and UI shows success
 • Phase: 2 — Upload + Setup
 • Branch: feature/upload-setup
+
+## 🗓 2025-07-30 21:15 — Upload Confirmation UI Polished
+• Edited: /frontend/src/app/dashboard/upload/page.tsx
+• Added: loading state, upload confirmation message
+• Prevented double-submit with button disable
+• Verified: UX update works and reflects backend state
+• Phase: 2 — Upload + Setup
+• Branch: feature/upload-setup
