@@ -35,3 +35,11 @@
 • Status: Working — renders cleanly with browser test
 • Phase: 2 — Upload + Setup
 • Branch: feature/upload-setup
+
+## 🗓 2025-07-30 20:05 — File Upload to Supabase Storage
+• Edited: /frontend/src/app/dashboard/upload/page.tsx
+• Connected Supabase storage SDK
+• Enabled private uploads to 'documents' bucket via RLS policy
+• Status: File uploads appear in dashboard and UI shows success
+• Phase: 2 — Upload + Setup
+• Branch: feature/upload-setup

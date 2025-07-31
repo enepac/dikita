@@ -1,11 +1,12 @@
-// frontend/src/app/dashboard/upload/page.tsx
 "use client";
 
-import { supabase } from "@/lib/supabase"; // make sure this import is at the top
 import { useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function UploadDocuments() {
   const [files, setFiles] = useState<File[]>([]);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -24,18 +25,36 @@ export default function UploadDocuments() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setUploading(true);
+    setStatusMessage("");
 
     for (const file of files) {
-      const { data, error } = await supabase.storage
-        .from("documents")
-        .upload(`uploads/${Date.now()}-${file.name}`, file);
+      const storagePath = `uploads/${Date.now()}-${file.name}`;
 
-      if (error) {
-        console.error("Upload error:", error.message);
+      const { error: storageError } = await supabase.storage
+        .from("documents")
+        .upload(storagePath, file);
+
+      if (storageError) {
+        setStatusMessage(`❌ Upload failed for ${file.name}`);
+        console.error("Upload error:", storageError.message);
+        continue;
+      }
+
+      const { error: dbError } = await supabase.from("documents").insert({
+        file_name: file.name,
+        storage_path: storagePath,
+      });
+
+      if (dbError) {
+        setStatusMessage(`❌ Metadata failed for ${file.name}`);
+        console.error("Metadata error:", dbError.message);
       } else {
-        console.log("File uploaded:", data.path);
+        setStatusMessage(`✅ Uploaded ${file.name} successfully`);
       }
     }
+
+    setUploading(false);
   };
 
   return (
@@ -62,10 +81,7 @@ export default function UploadDocuments() {
 
       <ul className="w-full max-w-xl mb-4">
         {files.map((file, i) => (
-          <li
-            key={i}
-            className="flex justify-between items-center border p-2 rounded mb-2"
-          >
+          <li key={i} className="flex justify-between items-center border p-2 rounded mb-2">
             {file.name}
             <button
               onClick={() => removeFile(i)}
@@ -79,10 +95,19 @@ export default function UploadDocuments() {
 
       <button
         onClick={handleSubmit}
-        className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
+        disabled={uploading}
+        className={`bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 ${
+          uploading ? "opacity-50 cursor-not-allowed" : ""
+        }`}
       >
-        🧠 Embed Docs into AI Memory
+        {uploading ? "Uploading..." : "🧠 Embed Docs into AI Memory"}
       </button>
+
+      {statusMessage && (
+        <p className="mt-4 text-sm text-green-700 transition-all duration-500">
+          {statusMessage}
+        </p>
+      )}
     </main>
   );
 }
