@@ -51,3 +51,10 @@
 • Verified: UX update works and reflects backend state
 • Phase: 2 — Upload + Setup
 • Branch: feature/upload-setup
+
+## 🗓 2025-07-30 22:10 — Mic Test UI Functional
+• Added: /frontend/src/app/dashboard/mic-test/page.tsx
+• Feature: Web Audio API + mic input + volume bar
+• Status: Works in-browser — detects ambient sound
+• Phase: 3 — Mic + Audio
+• Branch: feature/mic-test
