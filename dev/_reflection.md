@@ -12,3 +12,11 @@
 • Status: Working (login screen renders)
 • Branch: feature/auth-routing
 • Phase: 1 — Auth + Routing
+
+## 🗓 2025-07-30 18:20 — Phase 1 Complete: Auth + Dashboard
+• Edited: /frontend/src/app/page.tsx, /dashboard/page.tsx
+• Built: Firebase Auth (Google + Guest), auth context, and redirect logic
+• Added: Conditional routing post-login to /dashboard
+• Status: Working — Home screen loads, sign-in triggers redirect
+• Branch: feature/auth-routing
+• Phase: 1 — Auth + Routing
