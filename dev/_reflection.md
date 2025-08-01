@@ -51,3 +51,10 @@
 • Verified: UX update works and reflects backend state
 • Phase: 2 — Upload + Setup
 • Branch: feature/upload-setup
+
+## 🗓 2025-07-31 21:50 — Mic Test Screen Working
+• Added: /frontend/src/app/dashboard/mic-test/page.tsx
+• Goal: Confirm microphone and test transcription via Whisper API
+• Status: Working — mic access + audio blob + transcript returns
+• Last Commit: feat: mic test screen with Whisper API integration
+• Phase: 3 — Mic Test
