@@ -72,3 +72,11 @@
 • Status: Working — local mock loop confirmed in browser
 • Last Commit: feat: practice mode Q&A loop screen with retry + next logic
 • Phase: 5 — Practice Mode
+
+## 🗓 2025-07-31 23:10 — Live Interview Mode (UI)
+• Added: /frontend/src/app/dashboard/live/page.tsx
+• Goal: Display real-time transcript + AI response with stealth controls
+• Status: Static mock working — buttons and layout verified
+• Last Commit: feat: live interview dashboard with transcript, AI answer, and controls
+• Phase: 6 — Live Interview
+
