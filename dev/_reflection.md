@@ -65,3 +65,10 @@
 • Status: Working — renders mock data and interactive CTAs
 • Last Commit: feat: session ready screen with prompt preview and CTAs
 • Phase: 4 — Ready Check
+
+## 🗓 2025-07-31 22:45 — Practice Mode Q&A Loop
+• Added: /frontend/src/app/dashboard/practice/page.tsx
+• Goal: Practice answering interview questions with retry + next functionality
+• Status: Working — local mock loop confirmed in browser
+• Last Commit: feat: practice mode Q&A loop screen with retry + next logic
+• Phase: 5 — Practice Mode
