@@ -36,16 +36,18 @@ export default function LiveInterviewPage() {
 
   const isValid = (text: string): boolean => {
     const lower = text.toLowerCase();
-    const invalid = [
+    const invalidPatterns = [
       "you're welcome",
       "thank you for watching",
-      "please clarify",
       "feel free to ask",
+      "please clarify",
+      "i'm here to help",
+      "go to ",
       "subs by ",
       "i'm sorry",
       "as an ai",
     ];
-    return !invalid.some((phrase) => lower.includes(phrase));
+    return !invalidPatterns.some((phrase) => lower.includes(phrase));
   };
 
   const highlightReadPortion = (fullText: string, readText: string): JSX.Element => {
@@ -55,7 +57,9 @@ export default function LiveInterviewPage() {
     }
     return (
       <>
-        <mark className="bg-yellow-200 text-black">{fullText.slice(0, readLength)}</mark>
+        <mark className="bg-yellow-200 text-black">
+          {fullText.slice(0, readLength)}
+        </mark>
         {fullText.slice(readLength)}
       </>
     );
@@ -73,79 +77,93 @@ export default function LiveInterviewPage() {
       recorder.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
 
-        // Speaker filtering via RMS energy
+        // Voice fingerprint filtering
         const yourVoiceBlob = window._yourVoiceBlob;
         if (yourVoiceBlob) {
-          const [yourEnergy, chunkEnergy] = await Promise.all([
+          const [userEnergy, chunkEnergy] = await Promise.all([
             getRmsEnergy(yourVoiceBlob),
             getRmsEnergy(blob),
           ]);
-          const similarity = Math.abs(yourEnergy - chunkEnergy);
+          const similarity = Math.abs(userEnergy - chunkEnergy);
           if (similarity < 0.01) {
-            console.log("⛔ Skipped: Matched your voice");
+            console.log("⛔ Skipped: Voice matches your fingerprint");
+            stream.getTracks().forEach((track) => track.stop());
             return;
           }
         }
 
         const file = new File([blob], "live-chunk.webm", { type: "audio/webm" });
+
         const formData = new FormData();
         formData.append("file", file);
         formData.append("model", "whisper-1");
         formData.append("language", "en");
 
-        const transcriptRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,
-          },
-          body: formData,
-        });
-
-        const transcriptData = await transcriptRes.json();
-        const spoken = transcriptData.text?.trim();
-        if (!spoken || isMuted || isPaused || spoken.length < 4) return;
-        setSpokenText(spoken);
-
-        if (!isValid(spoken) || spoken === lastQuestionRef.current) return;
-        lastQuestionRef.current = spoken;
-
-        const gptRes = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "gpt-4o",
-            messages: [
-              {
-                role: "system",
-                content:
-                  "You are the interviewee. Give a direct, first-person, serious answer to the question. No tips or filler.",
-              },
-              { role: "user", content: spoken },
-            ],
-            temperature: 0.7,
-          }),
-        });
-
-        const gptData = await gptRes.json();
-        const answer = gptData?.choices?.[0]?.message?.content?.trim();
-        if (answer && isValid(answer)) {
-          setMessages([
-            {
-              question: spoken,
-              answer,
-              timestamp: new Date().toISOString(),
+        try {
+          const transcriptRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,
             },
-          ]);
+            body: formData,
+          });
+
+          const transcriptData = await transcriptRes.json();
+          const spoken = transcriptData.text?.trim();
+
+          if (!spoken || isMuted || isPaused || spoken.length < 4) return;
+          setSpokenText(spoken);
+
+          if (!isValid(spoken) || spoken === lastQuestionRef.current) return;
+
+          lastQuestionRef.current = spoken;
+
+          const gptRes = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "gpt-4o",
+              messages: [
+                {
+                  role: "system",
+                  content:
+                    "You are acting as the interviewee. Provide a direct, first-person answer to the interview question. Do not include tips, filler, or clarification prompts. Only return a serious, professional response.",
+                },
+                {
+                  role: "user",
+                  content: spoken,
+                },
+              ],
+              temperature: 0.7,
+            }),
+          });
+
+          const gptData = await gptRes.json();
+          const answer = gptData?.choices?.[0]?.message?.content?.trim();
+
+          if (answer && isValid(answer)) {
+            setMessages([
+              {
+                question: spoken,
+                answer,
+                timestamp: new Date().toISOString(),
+              },
+            ]);
+          }
+        } catch (err) {
+          console.error("Whisper or GPT error:", err);
         }
 
         stream.getTracks().forEach((track) => track.stop());
       };
 
       recorder.start();
-      setTimeout(() => recorder.stop(), 5000);
+      setTimeout(() => {
+        recorder.stop();
+      }, 5000);
     } catch (err) {
       console.error("Mic access denied:", err);
     }
@@ -153,7 +171,9 @@ export default function LiveInterviewPage() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (!isMuted && !isPaused) startAudioCapture();
+      if (!isMuted && !isPaused) {
+        startAudioCapture();
+      }
     }, 6000);
     return () => clearInterval(interval);
   }, [isMuted, isPaused, startAudioCapture]);
@@ -181,7 +201,9 @@ export default function LiveInterviewPage() {
             </div>
             <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 p-3 rounded-md shadow-sm">
               <p className="text-sm text-gray-500 mb-1">A:</p>
-              <p className="text-gray-900">{highlightReadPortion(msg.answer, spokenText)}</p>
+              <p className="text-gray-900">
+                {highlightReadPortion(msg.answer, spokenText)}
+              </p>
             </div>
           </div>
         ))}
