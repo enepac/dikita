@@ -112,6 +112,10 @@ export default function LiveInterviewPage() {
           const spoken = transcriptData.text?.trim();
 
           if (!spoken || isMuted || isPaused || spoken.length < 4) return;
+          if (!spoken || isMuted || isPaused || spoken.length < 4) {
+            return;
+          }
+
           setSpokenText(spoken);
 
           if (!isValid(spoken) || spoken === lastQuestionRef.current) return;
